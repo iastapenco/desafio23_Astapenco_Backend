@@ -3,6 +3,7 @@ import passport from "passport";
 import { passportError, authorization } from "../utils/messagesError.js";
 import { generateToken } from "../utils/jwt.js";
 import multer from "multer";
+import { userModel } from "../dao/models/users.models.js";
 
 const sessionRouter = Router();
 const storage = multer.diskStorage({
@@ -105,11 +106,20 @@ sessionRouter.post(
 );
 
 sessionRouter.get("/logout", async (req, res) => {
-  if (req.session.login) {
+  if (req.session.user) {
+    const user = await userModel.findById(req.session.passport.user);
+    if (!user) {
+      return res.status(404).send("Usuario no encontrado");
+    }
+
+    user.last_connection = Date.now();
+    await user.save();
     req.session.destroy();
+    res.clearCookie("jwtCookie");
+    res.status(200).send({ resultado: "Usuario deslogueado" });
+  } else {
+    res.status(404).send("El usuario no tiene sesiones activas");
   }
-  res.clearCookie("jwtCookie");
-  res.status(200).send({ resultado: "Usuario deslogueado" });
 });
 
 sessionRouter.get(
