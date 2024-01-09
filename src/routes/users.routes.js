@@ -2,10 +2,21 @@ import { Router } from "express";
 import crypto from "crypto";
 import { sendRecoveryMail } from "../config/nodemailer.js";
 import UserManager from "../dao/managers_mongo/userManagerMongo.js";
+import multer from "multer";
 
 const userRouter = Router();
 const recoveryLinks = {};
 const userManager = new UserManager();
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "src/public/documents");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 userRouter.post("/password-recovery", (req, res) => {
   const { email } = req.body;
@@ -111,4 +122,8 @@ userRouter.delete("/:id", async (req, res) => {
   }
 });
 
+userRouter.post("/:uid/documents", upload.single("document"), (req, res) => {
+  console.log(req.file);
+  res.status(200).send("Documento cargado");
+});
 export default userRouter;

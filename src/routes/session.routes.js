@@ -2,7 +2,19 @@ import { Router } from "express";
 import passport from "passport";
 import { passportError, authorization } from "../utils/messagesError.js";
 import { generateToken } from "../utils/jwt.js";
+import multer from "multer";
+
 const sessionRouter = Router();
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "src/public/profiles");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 sessionRouter.get("/login", async (req, res) => {
   res.render("login", {
@@ -18,6 +30,9 @@ sessionRouter.post(
       if (!req.user) {
         return res.status(401).send({ mensaje: "Usuario inválido" });
       }
+      req.user.last_connection = Date.now();
+      await req.user.save();
+
       req.session.user = {
         first_name: req.user.first_name,
         last_name: req.user.last_name,
@@ -74,20 +89,18 @@ sessionRouter.post(
   }
 );
 
-sessionRouter.get(
-  "/github",
-  passport.authenticate("github", { scope: ["user:email"] }),
-  async (req, res) => {
-    res.status(200).send({ mensaje: "Usuario registrado" });
-  }
-);
-
-sessionRouter.get(
-  "/githubCallback",
-  passport.authenticate("github"),
-  async (req, res) => {
-    req.session.user = req.user;
-    res.status(200).send({ mensaje: "Usuario logueado" });
+sessionRouter.post(
+  "/:uid/profileImg",
+  upload.single("profile_img"),
+  (req, res) => {
+    try {
+      console.log(req.file);
+      res.status(200).send("Imagen de perfil cargada correctamente");
+    } catch (error) {
+      res
+        .status(500)
+        .send({ status: "Error al cargar la imagen", error: error });
+    }
   }
 );
 

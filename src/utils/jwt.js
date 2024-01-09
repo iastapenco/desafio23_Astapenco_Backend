@@ -6,7 +6,6 @@ export const generateToken = (user) => {
     expiresIn: "12h",
   });
 
-  console.log(token);
   return token;
 };
 

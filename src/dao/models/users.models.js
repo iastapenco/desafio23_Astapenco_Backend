@@ -32,6 +32,21 @@ const userSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  documents: {
+    type: [
+      {
+        name_doc: {
+          type: String,
+        },
+        reference: {
+          type: String,
+        },
+      },
+    ],
+  },
+  last_connection: {
+    type: Date,
+  },
 });
 
 userSchema.plugin(paginate);
