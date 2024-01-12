@@ -10,6 +10,9 @@ class UserManager {
   //Método para buscar un usuario por su id
   async findUserById(id) {
     const user = await userModel.findById(id);
+    if (!user) {
+      throw new Error("ID de usuario inválido");
+    }
     return user;
   }
 

@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { sendRecoveryMail } from "../config/nodemailer.js";
 import UserManager from "../dao/managers_mongo/userManagerMongo.js";
 import multer from "multer";
+import { error } from "console";
 
 const userRouter = Router();
 const recoveryLinks = {};
@@ -122,8 +123,37 @@ userRouter.delete("/:id", async (req, res) => {
   }
 });
 
-userRouter.post("/:uid/documents", upload.single("document"), (req, res) => {
-  console.log(req.file);
-  res.status(200).send("Documento cargado");
-});
+userRouter.post(
+  "/:uid/documents",
+  async (req, res, next) => {
+    const { uid } = req.params;
+    try {
+      const user = await userManager.findUserById(uid);
+      if (user) {
+        req.user = user;
+        next();
+      } else {
+        res.status(404).send({ error: "Usuario no encontrado" });
+      }
+    } catch (error) {
+      res.status(400).send({ error: error.message });
+    }
+  },
+  upload.single("document"),
+  async (req, res) => {
+    if (req.file) {
+      req.user.documents.push({
+        name_doc: `${req.user.first_name}  ${req.user.last_name}`,
+        reference: `src/public/documents/${req.file.filename}`,
+      });
+      await req.user.save();
+      console.log(req.user);
+      console.log(req.file);
+      res.status(200).send("Documento cargado");
+    } else {
+      res.status(400).send({ error: "Debe cargar un documento" });
+    }
+  }
+);
+
 export default userRouter;
